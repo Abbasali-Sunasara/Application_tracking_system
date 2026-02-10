@@ -49,20 +49,32 @@ if st.button("Analyze Match"):
             st.markdown("---")
             st.subheader("Keyword Analysis")
             
-            res_skills = extract_skills(resume_text)
-            jd_skills = extract_skills(jd_text)
+            # Get the lists of skills (We lowercase them to avoid 'Python' vs 'python')
+            res_skills = {s.lower() for s in extract_skills(resume_text)}
+            jd_skills = {s.lower() for s in extract_skills(jd_text)}
             
-            # Find common skills
-            common_skills = set(res_skills).intersection(set(jd_skills))
+            # Intersection (Match) and Difference (Missing)
+            common_skills = list(res_skills.intersection(jd_skills))
+            missing_skills = list(jd_skills - res_skills)
             
-            col_a, col_b, col_c = st.columns(3)
-            with col_a:
-                st.info(f"Resume Keywords: {len(res_skills)}")
-            with col_b:
-                st.info(f"JD Keywords: {len(jd_skills)}")
-            with col_c:
-                st.success(f"Matching Keywords: {len(common_skills)}")
-
+            # Displaying them in columns
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.success(f"✅ Matched Skills ({len(common_skills)})")
+                if common_skills:
+                    # Added 'color: #000000 !important' to force black text
+                    st.markdown("".join([f"<span style='background-color:#008000; color:#000000 !important; padding:5px; margin:2px; border-radius:5px; display:inline-block; font-weight:bold;'>{skill}</span>" for skill in common_skills]), unsafe_allow_html=True)
+                else:
+                    st.write("No direct matches found.")
+                
+            with col2:
+                st.error(f"⚠️ Missing Skills ({len(missing_skills)})")
+                if missing_skills:
+                    # Added 'color: #000000 !important' to force black text
+                    st.markdown("".join([f"<span style='background-color:#ff0000; color:#000000 !important; padding:5px; margin:2px; border-radius:5px; display:inline-block; font-weight:bold;'>{skill}</span>" for skill in missing_skills]), unsafe_allow_html=True)
+                else:
+                    st.write("No missing skills found!")
             with st.expander("View Text Details"):
                 st.text_area("Resume Text", resume_text, height=100)
                 st.text_area("JD Text", jd_text, height=100)
