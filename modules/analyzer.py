@@ -1,13 +1,11 @@
 import spacy
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer # Changed to TF-IDF
 from sklearn.metrics.pairwise import cosine_similarity
 
 # Load the English language model
-# This is the "brain" that identifies words, nouns, and entities
 try:
     nlp = spacy.load("en_core_web_sm")
 except:
-    # Fallback if model isn't found
     import os
     os.system("python -m spacy download en_core_web_sm")
     nlp = spacy.load("en_core_web_sm")
@@ -15,34 +13,37 @@ except:
 def extract_skills(text):
     """
     Extracts potential skills (Nouns and Proper Nouns) from the text.
-    In a real massive project, we would use a predefined list of 10,000 skills.
-    For this mini-project, we use NLP to find 'important words'.
     """
     doc = nlp(text)
     skills = []
     
-    # Loop through every word in the document
+    # Loop through every word
     for token in doc:
-        # If the word is a Noun (e.g., "Python", "Management") or Proper Noun
+        # We only keep Nouns (e.g. "Data") and Proper Nouns (e.g. "Python")
+        # We also remove "stop words" (is, and, the)
         if token.pos_ in ["NOUN", "PROPN"] and not token.is_stop:
             skills.append(token.text)
             
-    # Return unique skills only (remove duplicates)
+    # Return unique skills (using set to remove duplicates)
     return list(set(skills))
 
 def calculate_similarity(resume_text, jd_text):
     """
-    Calculates the match percentage using Cosine Similarity.
+    Calculates the match percentage using TF-IDF and Cosine Similarity.
     """
-    # 1. Create a list of the two texts
+    # 1. Create a list of the texts
     text_list = [resume_text, jd_text]
     
-    # 2. Convert text to numbers (Vectors)
-    cv = CountVectorizer()
-    count_matrix = cv.fit_transform(text_list)
+    # 2. Convert text to numbers (Vectors) using TF-IDF
+    # TF-IDF automatically lowers the weight of common words 
+    # and increases the weight of unique technical terms.
+    tfidf = TfidfVectorizer()
     
-    # 3. Calculate similarity (0 to 1)
-    match_score = cosine_similarity(count_matrix)[0][1]
+    # This creates a matrix of numbers
+    tfidf_matrix = tfidf.fit_transform(text_list)
     
-    # 4. Convert to percentage (0 to 100)
+    # 3. Calculate Cosine Similarity (The angle between the vectors)
+    match_score = cosine_similarity(tfidf_matrix)[0][1]
+    
+    # 4. Convert to percentage (0-100) and round to 2 decimal places
     return round(match_score * 100, 2)
